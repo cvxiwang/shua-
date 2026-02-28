@@ -24,7 +24,6 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
     
-    // Disable JDK image generation to avoid jlink issues
     buildFeatures {
         buildConfig = true
     }
