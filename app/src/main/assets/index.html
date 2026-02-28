@@ -66,12 +66,19 @@
         .btn:active {
             transform: scale(0.98);
         }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .btn-secondary {
             background: #f0f0f0;
             color: #333;
         }
         .btn-danger {
             background: #ff4757;
+        }
+        .btn-success {
+            background: #2ed573;
         }
         .btn-small {
             padding: 8px 16px;
@@ -146,6 +153,9 @@
             border-color: #ff4757;
             background: #ffe8ea;
         }
+        .option.disabled {
+            pointer-events: none;
+        }
         .answer-input {
             width: 100%;
             padding: 12px;
@@ -197,15 +207,26 @@
         .answer-reveal strong {
             color: #856404;
         }
-        .reference-answer {
+        .reference-answer-box {
             background: #e8f5e9;
-            border: 1px solid #4caf50;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
+            border: 2px solid #4caf50;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
         }
-        .reference-answer strong {
+        .reference-answer-box .title {
             color: #2e7d32;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .reference-answer-box .content {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
         }
         .nav {
             display: flex;
@@ -299,6 +320,38 @@
             position: absolute;
             bottom: 12px;
             right: 12px;
+        }
+        .result-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+        .result-correct {
+            background: #e8f9ef;
+            color: #2ed573;
+        }
+        .result-wrong {
+            background: #ffe8ea;
+            color: #ff4757;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+        .hint-text {
+            color: #666;
+            font-size: 14px;
+            margin-top: 8px;
+            font-style: italic;
         }
     </style>
 </head>
@@ -450,14 +503,7 @@
                 <span id="current-num">1</span> / <span id="total-num">10</span>
             </div>
             <div id="practice-content"></div>
-            <div class="nav" id="practice-nav">
-                <button class="btn btn-secondary" onclick="showAnswer()">👁️ 显示答案</button>
-                <button class="btn btn-secondary" onclick="addToWrong()">❌ 加入错题</button>
-            </div>
-            <div class="nav">
-                <button class="btn btn-secondary" onclick="prevQuestion()">上一题</button>
-                <button class="btn" onclick="nextQuestion()">下一题</button>
-            </div>
+            <div id="practice-nav"></div>
         </div>
 
         <!-- 错题本 -->
@@ -475,7 +521,14 @@
         var questions = [];
         var wrongAnswers = [];
         var practiceHistory = { total: 0, correct: 0 };
-        var currentPractice = { questions: [], index: 0, answers: {}, showedAnswer: false };
+        var currentPractice = { 
+            questions: [], 
+            index: 0, 
+            answers: {}, 
+            showedAnswer: false,
+            answered: false,  // 是否已作答
+            isCorrect: null   // 答案是否正确（选择题/判断题）
+        };
         var currentPage = 'home';
         var currentQuestionType = 'choice';
 
@@ -728,7 +781,13 @@
             
             if (mode === 'wrong') {
                 for (var i = 0; i < wrongAnswers.length; i++) {
-                    var q = questions.find(function(item) { return item.id === wrongAnswers[i].questionId; });
+                    var q = null;
+                    for (var j = 0; j < questions.length; j++) {
+                        if (questions[j].id === wrongAnswers[i].questionId) {
+                            q = questions[j];
+                            break;
+                        }
+                    }
                     if (q) pool.push(q);
                 }
                 if (pool.length === 0) {
@@ -753,7 +812,9 @@
                 questions: pool.slice(0, count),
                 index: 0,
                 answers: {},
-                showedAnswer: false
+                showedAnswer: false,
+                answered: false,
+                isCorrect: null
             };
             
             showPage('practice');
@@ -782,6 +843,7 @@
             html += '<span class="question-type type-' + q.type + '">' + typeNames[q.type] + '</span>';
             html += '<div class="question-text">' + q.text + '</div>';
             
+            // 选择题
             if (q.type === 'choice') {
                 html += '<div class="options">';
                 var opts = ['A', 'B', 'C', 'D'];
@@ -789,57 +851,178 @@
                     var opt = opts[i];
                     if (q.options[opt]) {
                         var className = 'option';
-                        if (userAnswer === opt) className += ' selected';
-                        if (currentPractice.showedAnswer) {
-                            if (opt === q.answer) className += ' correct';
-                            else if (userAnswer === opt) className += ' wrong';
+                        if (currentPractice.answered) {
+                            className += ' disabled';
+                            if (opt === q.answer) {
+                                className += ' correct';
+                            } else if (userAnswer === opt && userAnswer !== q.answer) {
+                                className += ' wrong';
+                            }
+                        } else if (userAnswer === opt) {
+                            className += ' selected';
                         }
-                        html += '<div class="' + className + '" onclick="selectAnswer(\'' + opt + '\')">' + opt + '. ' + q.options[opt] + '</div>';
+                        html += '<div class="' + className + '" onclick="selectChoiceAnswer(\'' + opt + '\')">' + opt + '. ' + q.options[opt] + '</div>';
                     }
                 }
                 html += '</div>';
-            } else if (q.type === 'judge') {
+                
+                // 显示判断结果
+                if (currentPractice.answered) {
+                    if (currentPractice.isCorrect) {
+                        html += '<div class="result-badge result-correct">✓ 回答正确！</div>';
+                    } else {
+                        html += '<div class="result-badge result-wrong">✗ 回答错误</div>';
+                        html += '<div class="answer-reveal"><strong>正确答案: ' + q.answer + '</strong></div>';
+                    }
+                    if (q.explain) {
+                        html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;"><strong>解析：</strong>' + q.explain + '</div>';
+                    }
+                }
+            }
+            // 判断题
+            else if (q.type === 'judge') {
                 html += '<div class="options">';
                 var judgeOpts = ['正确', '错误'];
                 for (var i = 0; i < judgeOpts.length; i++) {
                     var opt = judgeOpts[i];
                     var className = 'option';
-                    if (userAnswer === opt) className += ' selected';
-                    if (currentPractice.showedAnswer) {
-                        if (opt === q.answer) className += ' correct';
-                        else if (userAnswer === opt) className += ' wrong';
+                    if (currentPractice.answered) {
+                        className += ' disabled';
+                        if (opt === q.answer) {
+                            className += ' correct';
+                        } else if (userAnswer === opt && userAnswer !== q.answer) {
+                            className += ' wrong';
+                        }
+                    } else if (userAnswer === opt) {
+                        className += ' selected';
                     }
-                    html += '<div class="' + className + '" onclick="selectAnswer(\'' + opt + '\')">' + opt + '</div>';
+                    html += '<div class="' + className + '" onclick="selectJudgeAnswer(\'' + opt + '\')">' + opt + '</div>';
                 }
                 html += '</div>';
-            } else if (q.type === 'short') {
+                
+                // 显示判断结果
+                if (currentPractice.answered) {
+                    if (currentPractice.isCorrect) {
+                        html += '<div class="result-badge result-correct">✓ 回答正确！</div>';
+                    } else {
+                        html += '<div class="result-badge result-wrong">✗ 回答错误</div>';
+                        html += '<div class="answer-reveal"><strong>正确答案: ' + q.answer + '</strong></div>';
+                    }
+                    if (q.explain) {
+                        html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;"><strong>解析：</strong>' + q.explain + '</div>';
+                    }
+                }
+            }
+            // 简答题
+            else if (q.type === 'short') {
                 html += '<div class="form-group" style="margin-top:12px;">';
                 html += '<label>你的答案：</label>';
                 html += '<textarea class="answer-input" id="short-answer-input" placeholder="请输入你的答案..." onchange="saveShortAnswer()">' + (userAnswer || '') + '</textarea>';
                 html += '</div>';
-            }
-            
-            if (currentPractice.showedAnswer) {
-                if (q.type === 'short') {
-                    html += '<div class="reference-answer"><strong>参考答案：</strong><p style="margin-top:8px;white-space:pre-wrap;">' + q.answer + '</p></div>';
-                } else {
-                    html += '<div class="answer-reveal"><strong>正确答案: ' + q.answer + '</strong></div>';
-                }
-                if (q.explain) {
-                    html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;"><strong>解析：</strong>' + q.explain + '</div>';
+                
+                // 简答题不判断正误，只显示参考答案
+                if (currentPractice.showedAnswer) {
+                    html += '<div class="reference-answer-box">';
+                    html += '<div class="title">📖 参考答案</div>';
+                    html += '<div class="content">' + q.answer + '</div>';
+                    html += '</div>';
+                    if (q.explain) {
+                        html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;"><strong>解析：</strong>' + q.explain + '</div>';
+                    }
                 }
             }
             
             html += '</div>';
             
             document.getElementById('practice-content').innerHTML = html;
+            
+            // 渲染导航按钮
+            renderNavigation(q);
         }
 
-        // 选择答案
-        function selectAnswer(opt) {
+        // 渲染导航按钮
+        function renderNavigation(q) {
+            var html = '';
+            
+            if (q.type === 'choice' || q.type === 'judge') {
+                // 选择题/判断题：已作答后显示"下一题"和"加入错题本"（如果错误）
+                if (currentPractice.answered) {
+                    html = '<div class="action-buttons">';
+                    
+                    // 答错时显示加入错题本按钮
+                    if (!currentPractice.isCorrect) {
+                        html += '<button class="btn btn-danger" onclick="addToWrongBook()">❌ 加入错题本</button>';
+                    }
+                    html += '<button class="btn" onclick="nextQuestion()">下一题 →</button>';
+                    html += '</div>';
+                } else {
+                    html = '<div class="hint-text">请选择答案后继续</div>';
+                }
+            } else if (q.type === 'short') {
+                // 简答题
+                html = '<div class="action-buttons">';
+                
+                // 显示答案按钮
+                if (!currentPractice.showedAnswer) {
+                    html += '<button class="btn btn-secondary" onclick="showReferenceAnswer()">👁️ 显示答案</button>';
+                } else {
+                    // 已经显示答案后，可以加入错题本或下一题
+                    html += '<button class="btn btn-danger" onclick="addToWrongBook()">❌ 加入错题本</button>';
+                    html += '<button class="btn" onclick="nextQuestion()">下一题 →</button>';
+                }
+                
+                html += '</div>';
+            }
+            
+            // 上一题按钮（独立一行）
+            if (currentPractice.index > 0) {
+                html += '<div class="nav" style="margin-top:8px;">';
+                html += '<button class="btn btn-secondary" onclick="prevQuestion()">← 上一题</button>';
+                html += '</div>';
+            }
+            
+            document.getElementById('practice-nav').innerHTML = html;
+        }
+
+        // 选择题选择答案
+        function selectChoiceAnswer(opt) {
+            if (currentPractice.answered) return;
+            
             var q = currentPractice.questions[currentPractice.index];
             currentPractice.answers[q.id] = opt;
-            currentPractice.showedAnswer = false;
+            
+            // 立即判断正误
+            currentPractice.answered = true;
+            currentPractice.isCorrect = (opt === q.answer);
+            
+            // 更新统计
+            practiceHistory.total++;
+            if (currentPractice.isCorrect) {
+                practiceHistory.correct++;
+            }
+            saveData();
+            
+            renderQuestion();
+        }
+
+        // 判断题选择答案
+        function selectJudgeAnswer(opt) {
+            if (currentPractice.answered) return;
+            
+            var q = currentPractice.questions[currentPractice.index];
+            currentPractice.answers[q.id] = opt;
+            
+            // 立即判断正误
+            currentPractice.answered = true;
+            currentPractice.isCorrect = (opt === q.answer);
+            
+            // 更新统计
+            practiceHistory.total++;
+            if (currentPractice.isCorrect) {
+                practiceHistory.correct++;
+            }
+            saveData();
+            
             renderQuestion();
         }
 
@@ -848,58 +1031,59 @@
             var q = currentPractice.questions[currentPractice.index];
             var input = document.getElementById('short-answer-input');
             if (input) {
-                currentPractice.answers[q.id] = input.value;
+                currentPractice.answers[q.id] = input.value.trim();
             }
         }
 
-        // 显示答案
-        function showAnswer() {
+        // 显示参考答案（简答题）
+        function showReferenceAnswer() {
+            var q = currentPractice.questions[currentPractice.index];
+            var input = document.getElementById('short-answer-input');
+            
+            // 检查是否填写了答案
+            if (!input || !input.value.trim()) {
+                alert('请先填写你的答案');
+                return;
+            }
+            
+            currentPractice.answers[q.id] = input.value.trim();
             currentPractice.showedAnswer = true;
+            currentPractice.answered = true;
+            
+            // 简答题不计入统计
+            saveData();
             renderQuestion();
         }
 
-        // 加入错题
-        function addToWrong() {
+        // 加入错题本
+        function addToWrongBook() {
             var q = currentPractice.questions[currentPractice.index];
             var userAnswer = currentPractice.answers[q.id];
             
-            // 简答题总是可以加入错题
-            if (q.type === 'short') {
-                var exists = wrongAnswers.find(function(w) { return w.questionId === q.id; });
-                if (!exists) {
-                    wrongAnswers.push({
-                        questionId: q.id,
-                        yourAnswer: userAnswer || '(未作答)',
-                        time: Date.now()
-                    });
-                    saveData();
-                    alert('已加入错题本');
-                } else {
-                    alert('该题已在错题本中');
-                }
-                return;
-            }
-            
             if (!userAnswer) {
-                alert('请先选择答案');
+                alert('请先作答');
                 return;
             }
             
-            if (userAnswer !== q.answer) {
-                var exists = wrongAnswers.find(function(w) { return w.questionId === q.id; });
-                if (!exists) {
-                    wrongAnswers.push({
-                        questionId: q.id,
-                        yourAnswer: userAnswer,
-                        time: Date.now()
-                    });
-                    saveData();
-                    alert('已加入错题本');
-                } else {
-                    alert('该题已在错题本中');
+            // 检查是否已在错题本中
+            var exists = false;
+            for (var i = 0; i < wrongAnswers.length; i++) {
+                if (wrongAnswers[i].questionId === q.id) {
+                    exists = true;
+                    break;
                 }
+            }
+            
+            if (!exists) {
+                wrongAnswers.push({
+                    questionId: q.id,
+                    yourAnswer: userAnswer,
+                    time: Date.now()
+                });
+                saveData();
+                alert('已加入错题本');
             } else {
-                alert('答案正确，无需加入错题本');
+                alert('该题已在错题本中');
             }
         }
 
@@ -907,15 +1091,42 @@
         function prevQuestion() {
             if (currentPractice.index > 0) {
                 currentPractice.index--;
-                currentPractice.showedAnswer = false;
+                // 恢复上一题的状态
+                var q = currentPractice.questions[currentPractice.index];
+                var userAnswer = currentPractice.answers[q.id];
+                
+                if (q.type === 'short') {
+                    currentPractice.showedAnswer = !!userAnswer;
+                    currentPractice.answered = !!userAnswer;
+                } else {
+                    currentPractice.answered = !!userAnswer;
+                    currentPractice.isCorrect = userAnswer === q.answer;
+                }
+                
                 renderQuestion();
             }
         }
 
         // 下一题
         function nextQuestion() {
+            var q = currentPractice.questions[currentPractice.index];
+            var userAnswer = currentPractice.answers[q.id];
+            
+            // 检查是否已作答
+            if (!userAnswer) {
+                if (q.type === 'short') {
+                    alert('请先填写答案');
+                } else {
+                    alert('请先选择答案');
+                }
+                return;
+            }
+            
             currentPractice.index++;
             currentPractice.showedAnswer = false;
+            currentPractice.answered = false;
+            currentPractice.isCorrect = null;
+            
             if (currentPractice.index >= currentPractice.questions.length) {
                 finishPractice();
             } else {
@@ -926,27 +1137,27 @@
         // 完成练习
         function finishPractice() {
             var correct = 0;
+            var total = 0;
+            
             for (var i = 0; i < currentPractice.questions.length; i++) {
                 var q = currentPractice.questions[i];
                 var userAnswer = currentPractice.answers[q.id];
                 
-                // 简答题不统计正确率
-                if (q.type !== 'short' && userAnswer === q.answer) {
-                    correct++;
+                // 只统计选择题和判断题
+                if (q.type !== 'short') {
+                    total++;
+                    if (userAnswer === q.answer) {
+                        correct++;
+                    }
                 }
             }
             
-            var total = currentPractice.questions.length;
+            var rate = total > 0 ? Math.round(correct / total * 100) : 0;
             var shortCount = currentPractice.questions.filter(function(q) { return q.type === 'short'; }).length;
             
-            practiceHistory.total += total - shortCount;
-            practiceHistory.correct += correct;
-            saveData();
-            
-            var rate = (total - shortCount) > 0 ? Math.round(correct / (total - shortCount) * 100) : 0;
             var msg = '练习完成！\n';
             if (shortCount > 0) {
-                msg += '选择题/判断题: ' + correct + '/' + (total - shortCount) + ' (' + rate + '%)\n';
+                msg += '选择题/判断题: ' + correct + '/' + total + ' (' + rate + '%)\n';
                 msg += '简答题: ' + shortCount + ' 题（需人工评分）';
             } else {
                 msg += '正确: ' + correct + '/' + total + '\n正确率: ' + rate + '%';
@@ -954,6 +1165,7 @@
             
             alert(msg);
             showPage('home');
+            updateStats();
         }
 
         // 渲染错题列表
