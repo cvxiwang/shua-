@@ -1,0 +1,28 @@
+{
+  "name": "刷题助手",
+  "short_name": "刷题",
+  "description": "一个功能完整的刷题Web应用，支持题库管理、多种练习模式、错题本和学习统计。完全离线可用，数据本地存储。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "lang": "zh-CN",
+  "prefer_related_applications": false
+}

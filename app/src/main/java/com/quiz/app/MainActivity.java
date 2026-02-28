@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         });
         
         // 加载本地 HTML 文件
-        webView.loadUrl("file:///android_asset/public/index.html");
+        webView.loadUrl("file:///android_asset/index.html");
     }
 
     @Override
