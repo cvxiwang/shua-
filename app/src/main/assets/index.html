@@ -73,6 +73,11 @@
         .btn-danger {
             background: #ff4757;
         }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            width: auto;
+        }
         .form-group {
             margin-bottom: 12px;
         }
@@ -90,7 +95,7 @@
             font-size: 16px;
         }
         .form-group textarea {
-            min-height: 100px;
+            min-height: 80px;
             resize: vertical;
         }
         .question-card {
@@ -99,6 +104,16 @@
             padding: 16px;
             margin-bottom: 12px;
         }
+        .question-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .type-choice { background: #e3f2fd; color: #1976d2; }
+        .type-judge { background: #fff3e0; color: #f57c00; }
+        .type-short { background: #e8f5e9; color: #388e3c; }
         .question-text {
             font-size: 18px;
             margin-bottom: 16px;
@@ -130,6 +145,14 @@
         .option.wrong {
             border-color: #ff4757;
             background: #ffe8ea;
+        }
+        .answer-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            min-height: 100px;
         }
         .stats {
             display: grid;
@@ -173,6 +196,16 @@
         }
         .answer-reveal strong {
             color: #856404;
+        }
+        .reference-answer {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        .reference-answer strong {
+            color: #2e7d32;
         }
         .nav {
             display: flex;
@@ -225,10 +258,47 @@
         .wrong-item .your-answer {
             color: #ff4757;
             font-size: 14px;
+            margin-bottom: 4px;
         }
         .wrong-item .correct-answer {
             color: #2ed573;
             font-size: 14px;
+        }
+        .type-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .type-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .type-btn.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .question-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+        }
+        .question-item .type-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
+        .delete-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
         }
     </style>
 </head>
@@ -287,47 +357,83 @@
         <div id="page-questions" class="hidden">
             <div class="card">
                 <div class="card-title">添加题目</div>
+                
+                <div class="type-selector">
+                    <div class="type-btn active" id="type-choice" onclick="selectQuestionType('choice')">选择题</div>
+                    <div class="type-btn" id="type-judge" onclick="selectQuestionType('judge')">判断题</div>
+                    <div class="type-btn" id="type-short" onclick="selectQuestionType('short')">简答题</div>
+                </div>
+                
+                <input type="hidden" id="q-type" value="choice">
+                
                 <div class="form-group">
                     <label>题目内容</label>
                     <textarea id="q-text" placeholder="请输入题目内容..."></textarea>
                 </div>
-                <div class="form-group">
-                    <label>选项A</label>
-                    <input type="text" id="q-a" placeholder="选项A">
+                
+                <!-- 选择题选项 -->
+                <div id="choice-options">
+                    <div class="form-group">
+                        <label>选项A</label>
+                        <input type="text" id="q-a" placeholder="选项A">
+                    </div>
+                    <div class="form-group">
+                        <label>选项B</label>
+                        <input type="text" id="q-b" placeholder="选项B">
+                    </div>
+                    <div class="form-group">
+                        <label>选项C</label>
+                        <input type="text" id="q-c" placeholder="选项C（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label>选项D</label>
+                        <input type="text" id="q-d" placeholder="选项D（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label>正确答案</label>
+                        <select id="q-answer-choice">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>选项B</label>
-                    <input type="text" id="q-b" placeholder="选项B">
+                
+                <!-- 判断题选项 -->
+                <div id="judge-options" class="hidden">
+                    <div class="form-group">
+                        <label>正确答案</label>
+                        <select id="q-answer-judge">
+                            <option value="正确">正确 ✓</option>
+                            <option value="错误">错误 ✗</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>选项C</label>
-                    <input type="text" id="q-c" placeholder="选项C">
+                
+                <!-- 简答题 -->
+                <div id="short-options" class="hidden">
+                    <div class="form-group">
+                        <label>参考答案</label>
+                        <textarea id="q-answer-short" placeholder="请输入参考答案..." style="min-height: 120px;"></textarea>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>选项D</label>
-                    <input type="text" id="q-d" placeholder="选项D">
-                </div>
-                <div class="form-group">
-                    <label>正确答案</label>
-                    <select id="q-answer">
-                        <option value="A">A</option>
-                        <option value="B">B</option>
-                        <option value="C">C</option>
-                        <option value="D">D</option>
-                    </select>
-                </div>
+                
                 <div class="form-group">
                     <label>答案解析（可选）</label>
                     <textarea id="q-explain" placeholder="输入解析..."></textarea>
                 </div>
+                
                 <button class="btn" onclick="addQuestion()">添加题目</button>
             </div>
 
             <div class="card">
                 <div class="card-title">批量导入</div>
                 <div class="form-group">
-                    <label>粘贴题目（每行一题，格式：题目|A选项|B选项|C选项|D选项|答案|解析）</label>
-                    <textarea id="q-batch" rows="6" placeholder="示例：&#10;1+1等于几？|1|2|3|4|B|基础数学"></textarea>
+                    <label>选择题格式：题目|A选项|B选项|C选项|D选项|答案|解析</label>
+                    <label>判断题格式：题目|答案(正确/错误)|解析</label>
+                    <label>简答题格式：题目|参考答案|解析</label>
+                    <textarea id="q-batch" rows="6" placeholder="每行一题，示例：&#10;1+1等于几？|1|2|3|4|B|基础数学&#10;地球是圆的|正确|地理常识&#10;简述光合作用过程|植物利用阳光...|生物知识"></textarea>
                 </div>
                 <button class="btn btn-secondary" onclick="batchImport()">批量导入</button>
             </div>
@@ -366,11 +472,12 @@
 
     <script>
         // 数据存储
-        let questions = [];
-        let wrongAnswers = [];
-        let practiceHistory = { total: 0, correct: 0 };
-        let currentPractice = { questions: [], index: 0, answers: {} };
-        let currentPage = 'home';
+        var questions = [];
+        var wrongAnswers = [];
+        var practiceHistory = { total: 0, correct: 0 };
+        var currentPractice = { questions: [], index: 0, answers: {}, showedAnswer: false };
+        var currentPage = 'home';
+        var currentQuestionType = 'choice';
 
         // 初始化
         function init() {
@@ -382,26 +489,46 @@
         // 本地存储
         function loadData() {
             try {
-                questions = JSON.parse(localStorage.getItem('quiz_questions') || '[]');
-                wrongAnswers = JSON.parse(localStorage.getItem('quiz_wrong') || '[]');
-                practiceHistory = JSON.parse(localStorage.getItem('quiz_history') || '{"total":0,"correct":0}');
+                var q = localStorage.getItem('quiz_questions');
+                var w = localStorage.getItem('quiz_wrong');
+                var h = localStorage.getItem('quiz_history');
+                
+                questions = q ? JSON.parse(q) : [];
+                wrongAnswers = w ? JSON.parse(w) : [];
+                practiceHistory = h ? JSON.parse(h) : { total: 0, correct: 0 };
             } catch(e) {
                 console.error('加载数据失败', e);
+                questions = [];
+                wrongAnswers = [];
+                practiceHistory = { total: 0, correct: 0 };
             }
         }
 
         function saveData() {
-            localStorage.setItem('quiz_questions', JSON.stringify(questions));
-            localStorage.setItem('quiz_wrong', JSON.stringify(wrongAnswers));
-            localStorage.setItem('quiz_history', JSON.stringify(practiceHistory));
+            try {
+                localStorage.setItem('quiz_questions', JSON.stringify(questions));
+                localStorage.setItem('quiz_wrong', JSON.stringify(wrongAnswers));
+                localStorage.setItem('quiz_history', JSON.stringify(practiceHistory));
+            } catch(e) {
+                console.error('保存数据失败', e);
+            }
         }
 
         // 页面切换
         function showPage(page) {
-            document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden'));
+            var pages = document.querySelectorAll('[id^="page-"]');
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].classList.add('hidden');
+            }
             document.getElementById('page-' + page).classList.remove('hidden');
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab')[['home','questions','practice','wrong'].indexOf(page)].classList.add('active');
+            
+            var tabs = document.querySelectorAll('.tab');
+            for (var i = 0; i < tabs.length; i++) {
+                tabs[i].classList.remove('active');
+            }
+            var pageNames = ['home', 'questions', 'practice', 'wrong'];
+            tabs[pageNames.indexOf(page)].classList.add('active');
+            
             currentPage = page;
             
             if (page === 'home') updateStats();
@@ -409,42 +536,84 @@
             if (page === 'wrong') renderWrongList();
         }
 
+        // 选择题目类型
+        function selectQuestionType(type) {
+            currentQuestionType = type;
+            document.getElementById('q-type').value = type;
+            
+            document.querySelectorAll('.type-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            document.getElementById('type-' + type).classList.add('active');
+            
+            document.getElementById('choice-options').classList.add('hidden');
+            document.getElementById('judge-options').classList.add('hidden');
+            document.getElementById('short-options').classList.add('hidden');
+            
+            document.getElementById(type + '-options').classList.remove('hidden');
+        }
+
         // 更新统计
         function updateStats() {
             document.getElementById('stat-total').textContent = questions.length;
             document.getElementById('stat-practiced').textContent = practiceHistory.total;
-            document.getElementById('stat-correct').textContent = 
-                practiceHistory.total > 0 ? Math.round(practiceHistory.correct / practiceHistory.total * 100) + '%' : '0%';
+            var rate = practiceHistory.total > 0 ? Math.round(practiceHistory.correct / practiceHistory.total * 100) : 0;
+            document.getElementById('stat-correct').textContent = rate + '%';
             document.getElementById('stat-wrong').textContent = wrongAnswers.length;
         }
 
         // 添加题目
         function addQuestion() {
-            const q = {
+            var type = currentQuestionType;
+            var text = document.getElementById('q-text').value.trim();
+            var explain = document.getElementById('q-explain').value.trim();
+            
+            if (!text) {
+                alert('请填写题目内容');
+                return;
+            }
+            
+            var q = {
                 id: Date.now(),
-                text: document.getElementById('q-text').value.trim(),
-                options: {
+                type: type,
+                text: text,
+                explain: explain
+            };
+            
+            if (type === 'choice') {
+                q.options = {
                     A: document.getElementById('q-a').value.trim(),
                     B: document.getElementById('q-b').value.trim(),
                     C: document.getElementById('q-c').value.trim(),
                     D: document.getElementById('q-d').value.trim()
-                },
-                answer: document.getElementById('q-answer').value,
-                explain: document.getElementById('q-explain').value.trim()
-            };
-            
-            if (!q.text || !q.options.A || !q.options.B) {
-                alert('请填写题目和至少两个选项');
-                return;
+                };
+                q.answer = document.getElementById('q-answer-choice').value;
+                
+                if (!q.options.A || !q.options.B) {
+                    alert('请至少填写选项A和B');
+                    return;
+                }
+            } else if (type === 'judge') {
+                q.answer = document.getElementById('q-answer-judge').value;
+            } else if (type === 'short') {
+                q.answer = document.getElementById('q-answer-short').value.trim();
+                if (!q.answer) {
+                    alert('请填写参考答案');
+                    return;
+                }
             }
             
             questions.push(q);
             saveData();
             
             // 清空表单
-            ['q-text', 'q-a', 'q-b', 'q-c', 'q-d', 'q-explain'].forEach(id => {
-                document.getElementById(id).value = '';
-            });
+            document.getElementById('q-text').value = '';
+            document.getElementById('q-explain').value = '';
+            document.getElementById('q-a').value = '';
+            document.getElementById('q-b').value = '';
+            document.getElementById('q-c').value = '';
+            document.getElementById('q-d').value = '';
+            document.getElementById('q-answer-short').value = '';
             
             alert('添加成功！');
             renderQuestionsList();
@@ -452,30 +621,55 @@
 
         // 批量导入
         function batchImport() {
-            const text = document.getElementById('q-batch').value.trim();
+            var text = document.getElementById('q-batch').value.trim();
             if (!text) return;
             
-            const lines = text.split('\n').filter(l => l.trim());
-            let count = 0;
+            var lines = text.split('\n');
+            var count = 0;
             
-            lines.forEach(line => {
-                const parts = line.split('|');
-                if (parts.length >= 6) {
-                    questions.push({
-                        id: Date.now() + count,
-                        text: parts[0].trim(),
-                        options: {
-                            A: parts[1].trim(),
-                            B: parts[2].trim(),
-                            C: parts[3].trim(),
-                            D: parts[4].trim()
-                        },
-                        answer: parts[5].trim().toUpperCase(),
-                        explain: parts[6] ? parts[6].trim() : ''
-                    });
-                    count++;
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line) continue;
+                
+                var parts = line.split('|');
+                if (parts.length < 2) continue;
+                
+                var q = {
+                    id: Date.now() + count,
+                    type: 'choice',
+                    text: parts[0].trim(),
+                    explain: ''
+                };
+                
+                // 判断题目类型
+                if (parts.length >= 6 && (parts[5] === 'A' || parts[5] === 'B' || parts[5] === 'C' || parts[5] === 'D')) {
+                    // 选择题
+                    q.type = 'choice';
+                    q.options = {
+                        A: parts[1].trim(),
+                        B: parts[2].trim(),
+                        C: parts[3].trim(),
+                        D: parts[4].trim()
+                    };
+                    q.answer = parts[5].trim().toUpperCase();
+                    if (parts[6]) q.explain = parts[6].trim();
+                } else if (parts[1] === '正确' || parts[1] === '错误') {
+                    // 判断题
+                    q.type = 'judge';
+                    q.answer = parts[1].trim();
+                    if (parts[2]) q.explain = parts[2].trim();
+                } else if (parts.length >= 2) {
+                    // 简答题
+                    q.type = 'short';
+                    q.answer = parts[1].trim();
+                    if (parts[2]) q.explain = parts[2].trim();
+                } else {
+                    continue;
                 }
-            });
+                
+                questions.push(q);
+                count++;
+            }
             
             saveData();
             document.getElementById('q-batch').value = '';
@@ -485,23 +679,28 @@
 
         // 渲染题目列表
         function renderQuestionsList() {
-            const container = document.getElementById('questions-list');
+            var container = document.getElementById('questions-list');
             if (questions.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>暂无题目，请添加题目</p></div>';
                 return;
             }
             
-            let html = '';
-            questions.slice(0, 20).forEach((q, i) => {
-                html += '<div class="card">' +
-                    '<div class="question-text">' + (i + 1) + '. ' + q.text + '</div>' +
-                    '<div style="color: #2ed573; font-size: 14px;">答案: ' + q.answer + '</div>' +
-                    '<button class="btn btn-secondary" style="margin-top: 8px; width: auto; padding: 6px 12px;" onclick="deleteQuestion(' + q.id + ')">删除</button>' +
-                '</div>';
-            });
+            var typeNames = { choice: '选择题', judge: '判断题', short: '简答题' };
+            var html = '';
             
-            if (questions.length > 20) {
-                html += '<p style="text-align:center;color:#666;">显示前20题，共' + questions.length + '题</p>';
+            var displayQuestions = questions.slice(0, 30);
+            for (var i = 0; i < displayQuestions.length; i++) {
+                var q = displayQuestions[i];
+                html += '<div class="question-item">';
+                html += '<span class="question-type type-' + q.type + '">' + typeNames[q.type] + '</span>';
+                html += '<div class="question-text">' + (i + 1) + '. ' + q.text + '</div>';
+                html += '<div style="color: #2ed573; font-size: 14px;">答案: ' + q.answer + '</div>';
+                html += '<button class="btn btn-secondary btn-small delete-btn" onclick="deleteQuestion(' + q.id + ')">删除</button>';
+                html += '</div>';
+            }
+            
+            if (questions.length > 30) {
+                html += '<p style="text-align:center;color:#666;padding:12px;">显示前30题，共' + questions.length + '题</p>';
             }
             
             container.innerHTML = html;
@@ -510,7 +709,8 @@
         // 删除题目
         function deleteQuestion(id) {
             if (confirm('确定删除此题目？')) {
-                questions = questions.filter(q => q.id !== id);
+                questions = questions.filter(function(q) { return q.id !== id; });
+                wrongAnswers = wrongAnswers.filter(function(w) { return w.questionId !== id; });
                 saveData();
                 renderQuestionsList();
             }
@@ -523,21 +723,30 @@
                 return;
             }
             
-            const count = parseInt(document.getElementById('practice-count').value) || 10;
-            let pool = [];
+            var count = parseInt(document.getElementById('practice-count').value) || 10;
+            var pool = [];
             
             if (mode === 'wrong') {
-                pool = wrongAnswers.map(w => questions.find(q => q.id === w.questionId)).filter(q => q);
+                for (var i = 0; i < wrongAnswers.length; i++) {
+                    var q = questions.find(function(item) { return item.id === wrongAnswers[i].questionId; });
+                    if (q) pool.push(q);
+                }
                 if (pool.length === 0) {
                     alert('错题本为空');
                     return;
                 }
             } else {
-                pool = [...questions];
+                pool = questions.slice();
             }
             
             if (mode === 'random') {
-                pool = pool.sort(function() { return Math.random() - 0.5; });
+                // 洗牌算法
+                for (var i = pool.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var temp = pool[i];
+                    pool[i] = pool[j];
+                    pool[j] = temp;
+                }
             }
             
             currentPractice = {
@@ -553,56 +762,94 @@
 
         // 渲染当前题目
         function renderQuestion() {
-            const q = currentPractice.questions[currentPractice.index];
+            var q = currentPractice.questions[currentPractice.index];
             if (!q) {
                 finishPractice();
                 return;
             }
             
-            const total = currentPractice.questions.length;
-            const current = currentPractice.index + 1;
+            var total = currentPractice.questions.length;
+            var current = currentPractice.index + 1;
             
             document.getElementById('current-num').textContent = current;
             document.getElementById('total-num').textContent = total;
             document.getElementById('progress-bar').style.width = (current / total * 100) + '%';
             
-            const userAnswer = currentPractice.answers[q.id];
+            var userAnswer = currentPractice.answers[q.id];
+            var typeNames = { choice: '选择题', judge: '判断题', short: '简答题' };
             
-            let html = '<div class="question-card"><div class="question-text">' + q.text + '</div><div class="options">';
+            var html = '<div class="question-card">';
+            html += '<span class="question-type type-' + q.type + '">' + typeNames[q.type] + '</span>';
+            html += '<div class="question-text">' + q.text + '</div>';
             
-            ['A', 'B', 'C', 'D'].forEach(function(opt) {
-                if (q.options[opt]) {
-                    let className = 'option';
+            if (q.type === 'choice') {
+                html += '<div class="options">';
+                var opts = ['A', 'B', 'C', 'D'];
+                for (var i = 0; i < opts.length; i++) {
+                    var opt = opts[i];
+                    if (q.options[opt]) {
+                        var className = 'option';
+                        if (userAnswer === opt) className += ' selected';
+                        if (currentPractice.showedAnswer) {
+                            if (opt === q.answer) className += ' correct';
+                            else if (userAnswer === opt) className += ' wrong';
+                        }
+                        html += '<div class="' + className + '" onclick="selectAnswer(\'' + opt + '\')">' + opt + '. ' + q.options[opt] + '</div>';
+                    }
+                }
+                html += '</div>';
+            } else if (q.type === 'judge') {
+                html += '<div class="options">';
+                var judgeOpts = ['正确', '错误'];
+                for (var i = 0; i < judgeOpts.length; i++) {
+                    var opt = judgeOpts[i];
+                    var className = 'option';
                     if (userAnswer === opt) className += ' selected';
                     if (currentPractice.showedAnswer) {
                         if (opt === q.answer) className += ' correct';
                         else if (userAnswer === opt) className += ' wrong';
                     }
-                    html += '<div class="' + className + '" onclick="selectAnswer(\'' + opt + '\')">' + opt + '. ' + q.options[opt] + '</div>';
-                }
-            });
-            
-            html += '</div>';
-            
-            if (currentPractice.showedAnswer) {
-                html += '<div class="answer-reveal"><strong>正确答案: ' + q.answer + '</strong>';
-                if (q.explain) {
-                    html += '<p style="margin-top:8px;">解析: ' + q.explain + '</p>';
+                    html += '<div class="' + className + '" onclick="selectAnswer(\'' + opt + '\')">' + opt + '</div>';
                 }
                 html += '</div>';
+            } else if (q.type === 'short') {
+                html += '<div class="form-group" style="margin-top:12px;">';
+                html += '<label>你的答案：</label>';
+                html += '<textarea class="answer-input" id="short-answer-input" placeholder="请输入你的答案..." onchange="saveShortAnswer()">' + (userAnswer || '') + '</textarea>';
+                html += '</div>';
+            }
+            
+            if (currentPractice.showedAnswer) {
+                if (q.type === 'short') {
+                    html += '<div class="reference-answer"><strong>参考答案：</strong><p style="margin-top:8px;white-space:pre-wrap;">' + q.answer + '</p></div>';
+                } else {
+                    html += '<div class="answer-reveal"><strong>正确答案: ' + q.answer + '</strong></div>';
+                }
+                if (q.explain) {
+                    html += '<div style="margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;"><strong>解析：</strong>' + q.explain + '</div>';
+                }
             }
             
             html += '</div>';
             
             document.getElementById('practice-content').innerHTML = html;
-            currentPractice.showedAnswer = false;
         }
 
         // 选择答案
         function selectAnswer(opt) {
-            const q = currentPractice.questions[currentPractice.index];
+            var q = currentPractice.questions[currentPractice.index];
             currentPractice.answers[q.id] = opt;
+            currentPractice.showedAnswer = false;
             renderQuestion();
+        }
+
+        // 保存简答题答案
+        function saveShortAnswer() {
+            var q = currentPractice.questions[currentPractice.index];
+            var input = document.getElementById('short-answer-input');
+            if (input) {
+                currentPractice.answers[q.id] = input.value;
+            }
         }
 
         // 显示答案
@@ -613,8 +860,25 @@
 
         // 加入错题
         function addToWrong() {
-            const q = currentPractice.questions[currentPractice.index];
-            const userAnswer = currentPractice.answers[q.id];
+            var q = currentPractice.questions[currentPractice.index];
+            var userAnswer = currentPractice.answers[q.id];
+            
+            // 简答题总是可以加入错题
+            if (q.type === 'short') {
+                var exists = wrongAnswers.find(function(w) { return w.questionId === q.id; });
+                if (!exists) {
+                    wrongAnswers.push({
+                        questionId: q.id,
+                        yourAnswer: userAnswer || '(未作答)',
+                        time: Date.now()
+                    });
+                    saveData();
+                    alert('已加入错题本');
+                } else {
+                    alert('该题已在错题本中');
+                }
+                return;
+            }
             
             if (!userAnswer) {
                 alert('请先选择答案');
@@ -622,7 +886,8 @@
             }
             
             if (userAnswer !== q.answer) {
-                if (!wrongAnswers.find(function(w) { return w.questionId === q.id; })) {
+                var exists = wrongAnswers.find(function(w) { return w.questionId === q.id; });
+                if (!exists) {
                     wrongAnswers.push({
                         questionId: q.id,
                         yourAnswer: userAnswer,
@@ -642,6 +907,7 @@
         function prevQuestion() {
             if (currentPractice.index > 0) {
                 currentPractice.index--;
+                currentPractice.showedAnswer = false;
                 renderQuestion();
             }
         }
@@ -649,6 +915,7 @@
         // 下一题
         function nextQuestion() {
             currentPractice.index++;
+            currentPractice.showedAnswer = false;
             if (currentPractice.index >= currentPractice.questions.length) {
                 finishPractice();
             } else {
@@ -658,43 +925,73 @@
 
         // 完成练习
         function finishPractice() {
-            let correct = 0;
-            currentPractice.questions.forEach(function(q) {
-                if (currentPractice.answers[q.id] === q.answer) {
+            var correct = 0;
+            for (var i = 0; i < currentPractice.questions.length; i++) {
+                var q = currentPractice.questions[i];
+                var userAnswer = currentPractice.answers[q.id];
+                
+                // 简答题不统计正确率
+                if (q.type !== 'short' && userAnswer === q.answer) {
                     correct++;
                 }
-            });
+            }
             
-            const total = currentPractice.questions.length;
-            practiceHistory.total += total;
+            var total = currentPractice.questions.length;
+            var shortCount = currentPractice.questions.filter(function(q) { return q.type === 'short'; }).length;
+            
+            practiceHistory.total += total - shortCount;
             practiceHistory.correct += correct;
             saveData();
             
-            alert('练习完成！\n正确: ' + correct + '/' + total + '\n正确率: ' + Math.round(correct/total*100) + '%');
+            var rate = (total - shortCount) > 0 ? Math.round(correct / (total - shortCount) * 100) : 0;
+            var msg = '练习完成！\n';
+            if (shortCount > 0) {
+                msg += '选择题/判断题: ' + correct + '/' + (total - shortCount) + ' (' + rate + '%)\n';
+                msg += '简答题: ' + shortCount + ' 题（需人工评分）';
+            } else {
+                msg += '正确: ' + correct + '/' + total + '\n正确率: ' + rate + '%';
+            }
+            
+            alert(msg);
             showPage('home');
         }
 
         // 渲染错题列表
         function renderWrongList() {
             document.getElementById('wrong-count').textContent = wrongAnswers.length;
-            const container = document.getElementById('wrong-list');
+            var container = document.getElementById('wrong-list');
             
             if (wrongAnswers.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>错题本为空</p></div>';
                 return;
             }
             
-            let html = '';
-            wrongAnswers.forEach(function(w) {
-                const q = questions.find(function(item) { return item.id === w.questionId; });
-                if (!q) return;
-                html += '<div class="wrong-item">' +
-                    '<div class="question">' + q.text + '</div>' +
-                    '<div class="your-answer">你的答案: ' + w.yourAnswer + '</div>' +
-                    '<div class="correct-answer">正确答案: ' + q.answer + '</div>' +
-                    '<button class="btn btn-secondary" style="margin-top: 8px; width: auto; padding: 6px 12px;" onclick="removeFromWrong(' + q.id + ')">移除</button>' +
-                '</div>';
-            });
+            var typeNames = { choice: '选择题', judge: '判断题', short: '简答题' };
+            var html = '';
+            
+            for (var i = 0; i < wrongAnswers.length; i++) {
+                var w = wrongAnswers[i];
+                var q = null;
+                for (var j = 0; j < questions.length; j++) {
+                    if (questions[j].id === w.questionId) {
+                        q = questions[j];
+                        break;
+                    }
+                }
+                
+                if (!q) continue;
+                
+                html += '<div class="wrong-item">';
+                html += '<span class="question-type type-' + q.type + '">' + typeNames[q.type] + '</span>';
+                html += '<div class="question">' + q.text + '</div>';
+                html += '<div class="your-answer">你的答案: ' + w.yourAnswer + '</div>';
+                html += '<div class="correct-answer">正确答案: ' + q.answer + '</div>';
+                if (q.explain) {
+                    html += '<div style="margin-top:8px;font-size:13px;color:#666;">解析: ' + q.explain + '</div>';
+                }
+                html += '<button class="btn btn-secondary btn-small" style="margin-top:12px;" onclick="removeFromWrong(' + q.id + ')">移除</button>';
+                html += '</div>';
+            }
             
             container.innerHTML = html;
         }
@@ -715,7 +1012,7 @@
             }
         }
 
-        // 启动
+        // 启动应用
         init();
     </script>
 </body>
