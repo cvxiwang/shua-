@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 背景层：可改为颜色或 drawable -->
+    <background android:drawable="@color/ic_launcher_background"/>
+    <!-- 前景层：使用你已有的 drawable png 作为前景 -->
+    <foreground>
+        <bitmap
+            android:src="@drawable/ic_launcher_icon"
+            android:gravity="center" />
+    </foreground>
+</adaptive-icon>
