@@ -4,16 +4,103 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
-    <path
-        android:fillColor="#3B82F6"
-        android:pathData="M54,30L54,30A24,24 0,0 1,78 54L78,54A24,24 0,0 1,54 78L54,78A24,24 0,0 1,30 54L30,54A24,24 0,0 1,54 30z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M45,42h6v24h-6z"/>
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M57,42h6v24h-6z"/>
+
+    <!-- 中心偏移，为adaptive icon预留安全区 -->
+
+    <!-- 夏字艺术体 - 现代极简风格 -->
+    <group
+        android:translateX="26"
+        android:translateY="26">
+
+        <!-- 上横 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M8,16
+                             L44,16
+                             Q48,16 48,20
+                             Q48,24 44,24
+                             L8,24
+                             Q4,24 4,20
+                             Q4,16 8,16Z"/>
+
+        <!-- 中间竖 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,26
+                             L32,26
+                             L32,44
+                             Q32,48 28,48
+                             Q24,48 24,44
+                             Z"/>
+
+        <!-- 左撇 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M22,28
+                             Q26,28 26,32
+                             L12,56
+                             Q10,60 6,58
+                             Q2,56 4,52
+                             Z"/>
+
+        <!-- 右捺 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M34,28
+                             Q30,28 30,32
+                             L44,56
+                             Q46,60 50,58
+                             Q54,56 52,52
+                             Z"/>
+
+        <!-- 目字框 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M14,38
+                             L44,38
+                             Q48,38 48,42
+                             L48,52
+                             Q48,56 44,56
+                             L14,56
+                             Q10,56 10,52
+                             L10,42
+                             Q10,38 14,38Z
+                             M16,44
+                             L16,50
+                             L42,50
+                             L42,44Z"/>
+
+        <!-- 下横 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M10,58
+                             L50,58
+                             Q54,58 54,62
+                             Q54,66 50,66
+                             L10,66
+                             Q6,66 6,62
+                             Q6,58 10,58Z"/>
+
+        <!-- 下撇 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M18,68
+                             Q22,68 22,72
+                             L14,82
+                             Q12,86 8,84
+                             Q4,82 6,78
+                             Z"/>
+
+        <!-- 下捺 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M42,68
+                             Q38,68 38,72
+                             L46,82
+                             Q48,86 52,84
+                             Q56,82 54,78
+                             Z"/>
+
+    </group>
+
 </vector>
