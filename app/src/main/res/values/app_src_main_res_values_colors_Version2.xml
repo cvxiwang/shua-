@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 背景色：如果你的 ic_launcher_icon 带有完整背景（非透明），可设为透明或白色 -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
